@@ -39,6 +39,7 @@ def plan_node(state: ResearchState) -> dict[str, object]:
     """Generate focused sub-questions for the research query."""
     query = state.get("query", "").strip()
     domain = state.get("domain", "").strip()
+    logger.info("plan_node: generating sub-questions for query=%s domain=%s", query, domain)
     if not query:
         raise ValueError("State 'query' must be provided for planning")
 
@@ -73,17 +74,13 @@ def search_node(state: ResearchState) -> dict[str, object]:
     """Search for the next unanswered sub-question and append results to state."""
     sub_questions = state.get("sub_questions", [])
     current_index = state.get("current_question_index", 0)
-
     if current_index >= len(sub_questions):
         logger.warning("search_node called but no sub-question at index %s", current_index)
         return {"iteration_count": state.get("iteration_count", 0) + 1}
-
     question = sub_questions[current_index]
-    logger.info("Searching sub-question %s/%s: %s", current_index + 1, len(sub_questions), question)
-
+    logger.info("search_node: searching for '%s' (%d/%d)", question, current_index + 1, len(sub_questions))
     results = tavily_search(question)
     existing = list(state.get("search_results", []))
-
     return {
         "search_results": existing + results,
         "current_question_index": current_index + 1,
@@ -94,19 +91,15 @@ def search_node(state: ResearchState) -> dict[str, object]:
 def evaluate_node(state: ResearchState) -> dict[str, object]:
     """Decide whether accumulated search results are sufficient to write a report."""
     iteration_count = state.get("iteration_count", 0)
-
-    if iteration_count >= 4:
-        logger.info("Hard cap reached (%s iterations), marking sufficient", iteration_count)
-        return {"sufficient": True}
-
     query = state.get("query", "")
     search_results = state.get("search_results", [])
-
+    if iteration_count >= 4:
+        logger.info("evaluate_node: hard cap reached (%d iterations), marking sufficient", iteration_count)
+        return {"sufficient": True}
     results_text = "\n\n".join(
         f"Title: {r.get('title', '')}\nURL: {r.get('url', '')}\nContent: {r.get('content', '')}"
         for r in search_results
     )
-
     prompt = (
         "You are a research quality evaluator. "
         "Given a research query and the search results collected so far, decide whether the "
@@ -115,7 +108,6 @@ def evaluate_node(state: ResearchState) -> dict[str, object]:
         f"Research query: {query}\n\n"
         f"Search results collected:\n{results_text}\n"
     )
-
     structured_model = _get_model(model="gpt-4o-mini", temperature=0).with_structured_output(SufficiencyDecision)
     response = structured_model.invoke(prompt)
     if isinstance(response, SufficiencyDecision):
@@ -124,8 +116,7 @@ def evaluate_node(state: ResearchState) -> dict[str, object]:
         sufficient = bool(response.get("sufficient", False))
     else:
         sufficient = False
-
-    logger.info("Evaluation result: sufficient=%s (iteration %s)", sufficient, iteration_count)
+    logger.info("evaluate_node: sufficient=%s iteration=%d", sufficient, iteration_count)
     return {"sufficient": sufficient}
 
 
@@ -134,14 +125,12 @@ def synthesise_node(state: ResearchState) -> dict[str, object]:
     query = state.get("query", "")
     domain = state.get("domain", "").strip()
     search_results = state.get("search_results", [])
-
+    logger.info("synthesise_node: generating report for query=%s domain=%s", query, domain)
     results_text = "\n\n".join(
         f"Source: {r.get('title', '')} ({r.get('url', '')})\n{r.get('content', '')}"
         for r in search_results
     )
-
     domain_text = f" in the {domain} sector" if domain else ""
-
     prompt = (
         f"You are an expert research analyst. Using only the sources provided below, write a "
         f"comprehensive research briefing on the following topic{domain_text}.\n\n"
@@ -161,14 +150,10 @@ def synthesise_node(state: ResearchState) -> dict[str, object]:
         "Write in a professional tone. Cite source titles inline where relevant. "
         "Do not invent information not present in the sources."
     )
-
     model = _get_model(model="gpt-4o", temperature=0.3)
-
-
     response = model.invoke(prompt)
     report = response.content if isinstance(response.content, str) else str(response.content)
-
-    logger.info("Synthesised report (%s chars) from %s sources", len(report), len(search_results))
+    logger.info("synthesise_node: report generated (%d chars, %d sources)", len(report), len(search_results))
     return {"report": report, "error": None}
 
 
