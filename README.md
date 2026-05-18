@@ -94,27 +94,26 @@ By taking these steps, retailers can strategically integrate AI into their logis
 
 ## Project structure
 
+```text
 research-assistant/
-├── agent/
-│ ├── state.py # ResearchState TypedDict - the shared memory passed between nodes
-│ ├── tools.py # Tavily search wrapper - isolated so the provider can be swapped
-│ ├── nodes.py # One function per graph node: plan, search, evaluate, synthesise, error
-│ └── graph.py # Assembles the StateGraph, defines edges and loop logic, exposes run_research()
-│
-├── api/
-│ ├── main.py # FastAPI app initialisation and CORS configuration
-│ ├── routes/
-│ │ └── research.py # POST /research and GET /health endpoints
-│ ├── Dockerfile
-│ └── requirements.txt
-│
-├── shared/
-│ ├── config.py # Loads and validates environment variables, exposes a cached Settings object
-│ └── models.py # Pydantic schemas for API request and response validation
-│
-├── docker-compose.yml # Single-service compose config for the API container
-├── .env.example # Required environment variables - copy to .env to run locally
-└── README.md
+	agent/
+		state.py        # ResearchState TypedDict - the shared memory passed between nodes
+		tools.py        # Tavily search wrapper - isolated so the provider can be swapped
+		nodes.py        # One function per graph node: plan, search, evaluate, synthesise, error
+		graph.py        # Assembles the StateGraph, defines edges and loop logic, exposes run_research()
+	api/
+		main.py         # FastAPI app initialisation and CORS configuration
+		routes/
+			research.py   # POST /research and GET /health endpoints
+		Dockerfile
+		requirements.txt
+	shared/
+		config.py       # Loads and validates environment variables, exposes a cached Settings object
+		models.py       # Pydantic schemas for API request and response validation
+	docker-compose.yml  # Single-service compose config for the API container
+	.env.example        # Required environment variables - copy to .env to run locally
+	README.md
+```
 
 ### Environment variables
 
