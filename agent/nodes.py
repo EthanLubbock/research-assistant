@@ -18,7 +18,7 @@ class SufficiencyDecision(BaseModel):
 logger = logging.getLogger(__name__)
 
 
-def _get_model() -> ChatOpenAI:
+def _get_model(model: str, temperature: float = 0) -> ChatOpenAI:
     settings = get_settings()
     openai_api_key = settings.openai_api_key.strip()
     if not openai_api_key:
@@ -29,8 +29,8 @@ def _get_model() -> ChatOpenAI:
         raise RuntimeError("OPENAI_API_KEY is still a placeholder value")
 
     return ChatOpenAI(
-        model="gpt-4o-mini",
-        temperature=0,
+        model=model,
+        temperature=temperature,
         api_key=SecretStr(openai_api_key),
     )
 
@@ -51,7 +51,7 @@ def plan_node(state: ResearchState) -> dict[str, object]:
         f"Domain context: {domain_text}\n"
     )
 
-    structured_model = _get_model().with_structured_output(SubQuestions)
+    structured_model = _get_model(model="gpt-4o-mini", temperature=0).with_structured_output(SubQuestions)
     response = structured_model.invoke(prompt)
     if isinstance(response, SubQuestions):
         sub_questions = response.questions
@@ -116,7 +116,7 @@ def evaluate_node(state: ResearchState) -> dict[str, object]:
         f"Search results collected:\n{results_text}\n"
     )
 
-    structured_model = _get_model().with_structured_output(SufficiencyDecision)
+    structured_model = _get_model(model="gpt-4o-mini", temperature=0).with_structured_output(SufficiencyDecision)
     response = structured_model.invoke(prompt)
     if isinstance(response, SufficiencyDecision):
         sufficient = response.sufficient
@@ -127,3 +127,57 @@ def evaluate_node(state: ResearchState) -> dict[str, object]:
 
     logger.info("Evaluation result: sufficient=%s (iteration %s)", sufficient, iteration_count)
     return {"sufficient": sufficient}
+
+
+def synthesise_node(state: ResearchState) -> dict[str, object]:
+    """Write a structured research report from all accumulated search results."""
+    query = state.get("query", "")
+    domain = state.get("domain", "").strip()
+    search_results = state.get("search_results", [])
+
+    results_text = "\n\n".join(
+        f"Source: {r.get('title', '')} ({r.get('url', '')})\n{r.get('content', '')}"
+        for r in search_results
+    )
+
+    domain_text = f" in the {domain} sector" if domain else ""
+
+    prompt = (
+        f"You are an expert research analyst. Using only the sources provided below, write a "
+        f"comprehensive research briefing on the following topic{domain_text}.\n\n"
+        f"Topic: {query}\n\n"
+        f"Sources:\n{results_text}\n\n"
+        "Structure your report with exactly these five sections. Use markdown headings.\n\n"
+        "## Executive Summary\n"
+        "A concise 3-4 sentence overview of the key findings.\n\n"
+        "## Key Use Cases\n"
+        "The most important real-world applications and how they are being used.\n\n"
+        "## Notable Tools and Vendors\n"
+        "Specific products, platforms, or companies mentioned in the sources.\n\n"
+        "## Risks and Limitations\n"
+        "Challenges, drawbacks, or concerns raised by the sources.\n\n"
+        "## Recommended Next Steps\n"
+        "Concrete actions a decision-maker could take based on these findings.\n\n"
+        "Write in a professional tone. Cite source titles inline where relevant. "
+        "Do not invent information not present in the sources."
+    )
+
+    model = _get_model(model="gpt-4o", temperature=0.3)
+
+
+    response = model.invoke(prompt)
+    report = response.content if isinstance(response.content, str) else str(response.content)
+
+    logger.info("Synthesised report (%s chars) from %s sources", len(report), len(search_results))
+    return {"report": report, "error": None}
+
+
+def error_node(state: ResearchState) -> dict[str, object]:
+    """Capture an unhandled exception message into state without crashing the graph."""
+    existing_error = state.get("error")
+    if existing_error:
+        logger.error("error_node reached with: %s", existing_error)
+        return {}
+
+    logger.error("error_node reached but no error message was set in state")
+    return {"error": "An unknown error occurred during research."}
