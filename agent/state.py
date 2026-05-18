@@ -2,9 +2,9 @@ from typing import TypedDict, NotRequired
 
 
 class SearchResult(TypedDict):
-	title: str
-	url: str
-	content: str
+    title: str
+    url: str
+    content: str
 
 
 class ResearchState(TypedDict):
