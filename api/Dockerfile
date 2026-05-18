@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY api /app/api
 COPY shared /app/shared
+COPY agent /app/agent
 
 EXPOSE 8000
 

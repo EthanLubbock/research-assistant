@@ -36,23 +36,23 @@ def _safe(node_fn):
 # Routing functions
 # ---------------------------------------------------------------------------
 
-def _route_after_plan(state: ResearchState) -> Literal["search", "error"]:
+def _route_after_plan(state: ResearchState) -> Literal["search", "error_node"]:
     if state.get("error"):
-        return "error"
+        return "error_node"
     return "search"
 
 
-def _route_after_search(state: ResearchState) -> Literal["evaluate", "error"]:
+def _route_after_search(state: ResearchState) -> Literal["evaluate", "error_node"]:
     if state.get("error"):
-        return "error"
+        return "error_node"
     return "evaluate"
 
 
 def _route_after_evaluate(
     state: ResearchState,
-) -> Literal["search", "synthesise", "error"]:
+) -> Literal["search", "synthesise", "error_node"]:
     if state.get("error"):
-        return "error"
+        return "error_node"
     if state.get("sufficient") or state.get("iteration_count", 0) >= 4:
         return "synthesise"
     return "search"
@@ -60,7 +60,7 @@ def _route_after_evaluate(
 
 def _route_after_synthesise(state: ResearchState) -> str:
     if state.get("error"):
-        return "error"
+        return "error_node"
     return END
 
 
@@ -75,30 +75,30 @@ def _build_graph() -> StateGraph:
     workflow.add_node("search", _safe(search_node))
     workflow.add_node("evaluate", _safe(evaluate_node))
     workflow.add_node("synthesise", _safe(synthesise_node))
-    workflow.add_node("error", error_node)
+    workflow.add_node("error_node", error_node)
 
     workflow.add_edge(START, "plan")
     workflow.add_conditional_edges(
         "plan",
         _route_after_plan,
-        {"search": "search", "error": "error"},
+        {"search": "search", "error_node": "error_node"},
     )
     workflow.add_conditional_edges(
         "search",
         _route_after_search,
-        {"evaluate": "evaluate", "error": "error"},
+        {"evaluate": "evaluate", "error_node": "error_node"},
     )
     workflow.add_conditional_edges(
         "evaluate",
         _route_after_evaluate,
-        {"search": "search", "synthesise": "synthesise", "error": "error"},
+        {"search": "search", "synthesise": "synthesise", "error_node": "error_node"},
     )
     workflow.add_conditional_edges(
         "synthesise",
         _route_after_synthesise,
-        {"error": "error", END: END},
+        {"error_node": "error_node", END: END},
     )
-    workflow.add_edge("error", END)
+    workflow.add_edge("error_node", END)
 
     return workflow
 
