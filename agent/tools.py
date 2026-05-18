@@ -1,13 +1,23 @@
-from __future__ import annotations
-
 import logging
 from typing import Any
 
 from tavily import TavilyClient
 
-from shared.config import settings
+from shared.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+
+def _get_tavily_client() -> TavilyClient:
+    settings = get_settings()
+    tavily_api_key = settings.tavily_api_key.strip()
+    if not tavily_api_key:
+        raise RuntimeError("TAVILY_API_KEY is set but empty")
+
+    if "your-tavily-api-key" in tavily_api_key.lower():
+        raise RuntimeError("TAVILY_API_KEY is still a placeholder value")
+
+    return TavilyClient(api_key=tavily_api_key)
 
 
 def tavily_search(query: str) -> list[dict[str, str]]:
@@ -17,7 +27,7 @@ def tavily_search(query: str) -> list[dict[str, str]]:
         return []
 
     try:
-        client = TavilyClient(api_key=settings.tavily_api_key)
+        client = _get_tavily_client()
         response: dict[str, Any] = client.search(
             query=query.strip(),
             max_results=5,
