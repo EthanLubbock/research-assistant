@@ -47,11 +47,33 @@ graph TD;
 
 ## Quick start
 
-1. Copy `.env.example` to `.env` and fill in keys
-2. `docker compose up --build`
-3. POST to `/research` (example below)
+### 1. Configure environment variables
 
-## Example request
+Copy `.env.example` to `.env` and fill in keys
+
+### 2. Start the backend
+
+```bash
+docker compose up --build
+```
+
+The API will then be available at `http://localhost:8000`
+
+### 3. Start the frontend
+
+In a separate terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The app will then be available at `http://localhost:5173`
+
+## Example API request
+
+If using the API directly (i.e. not via frontend) the below is an example POST request
 
 ```bash
 curl -X POST http://localhost:8000/research \
@@ -59,63 +81,7 @@ curl -X POST http://localhost:8000/research \
   -d '{"query": "AI applications in retail logistics", "domain": "retail"}'
 ```
 
-## Example response
-
-### Executive Summary
-
-Artificial intelligence (AI) is revolutionizing retail logistics by enhancing supply chain management, inventory control, and operational efficiency. Key applications include predictive analytics, digital twins, and AI-powered platforms that optimize logistics processes. Notable tools such as IBM's Food Trust platform demonstrate the integration of AI with blockchain for supply chain transparency. However, challenges such as data privacy and the complexity of AI implementation remain. Retailers are encouraged to adopt AI technologies strategically to maximize their return on investment and agility in the market.
-
-### Key Use Cases
-
-AI applications in retail logistics are diverse and impactful. Predictive analytics is a significant use case, helping retailers anticipate demand and optimize inventory levels, as highlighted in "AI in Retail Supply Chain | ThroughPut AI." Digital twins, which create virtual models of physical supply chains, enable real-time monitoring and decision-making (Nomtek). AI is also used in platforms like IBM's Food Trust to enhance transparency and traceability in the food supply chain by combining AI with blockchain technology (RTS Labs). These technologies collectively improve efficiency and reduce costs across the retail logistics spectrum.
-
-### Notable Tools and Vendors
-
-Several tools and vendors are leading the charge in AI applications for retail logistics. IBM's Food Trust platform is a prominent example, leveraging AI and blockchain to monitor the food supply chain (RTS Labs). This platform exemplifies how AI can be integrated with other technologies to enhance supply chain transparency. Additionally, companies like ThroughPut AI are providing solutions that drive efficiency and predictive analytics in the retail supply chain (ThroughPut AI). These vendors offer innovative solutions that are transforming logistics operations in the retail sector.
-
-### Risks and Limitations
-
-Despite the advantages, AI in retail logistics presents certain risks and limitations. Data privacy concerns are paramount, as the integration of AI requires access to vast amounts of sensitive information (NetSuite). The complexity of implementing AI solutions can also be a barrier, requiring significant investment in technology and expertise (Nomtek). Additionally, there is a risk of over-reliance on AI systems, which may lead to vulnerabilities if the technology fails or is not properly managed (RTS Labs). These challenges necessitate careful consideration and strategic planning by retailers.
-
-### Recommended Next Steps
-
-To effectively leverage AI in retail logistics, decision-makers should consider the following actions:
-
-1. **Conduct a Needs Assessment**: Evaluate the specific logistics challenges and opportunities within the organization to identify where AI can provide the most value.
-2. **Invest in Training and Expertise**: Develop internal capabilities by investing in training programs to equip staff with the skills needed to implement and manage AI technologies.
-
-3. **Pilot AI Solutions**: Start with pilot projects to test AI applications in a controlled environment, allowing for adjustments and learning before full-scale implementation.
-
-4. **Prioritize Data Security**: Implement robust data privacy measures to protect sensitive information and comply with regulatory requirements.
-
-5. **Collaborate with Trusted Vendors**: Partner with reputable AI vendors like IBM and ThroughPut AI to access cutting-edge technologies and industry expertise.
-
-By taking these steps, retailers can strategically integrate AI into their logistics operations, enhancing efficiency and competitiveness in the market.
-
-## Project structure
-
-```text
-research-assistant/
-	agent/
-		state.py        # ResearchState TypedDict - the shared memory passed between nodes
-		tools.py        # Tavily search wrapper - isolated so the provider can be swapped
-		nodes.py        # One function per graph node: plan, search, evaluate, synthesise, error
-		graph.py        # Assembles the StateGraph, defines edges and loop logic, exposes run_research()
-	api/
-		main.py         # FastAPI app initialisation and CORS configuration
-		routes/
-			research.py   # POST /research and GET /health endpoints
-		Dockerfile
-		requirements.txt
-	shared/
-		config.py       # Loads and validates environment variables, exposes a cached Settings object
-		models.py       # Pydantic schemas for API request and response validation
-	docker-compose.yml  # Single-service compose config for the API container
-	.env.example        # Required environment variables - copy to .env to run locally
-	README.md
-```
-
-### Environment variables
+### Environment variables (to add to .env)
 
 | Variable         | Description                                                    |
 | ---------------- | -------------------------------------------------------------- |
