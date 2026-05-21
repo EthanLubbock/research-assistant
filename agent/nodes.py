@@ -81,10 +81,18 @@ def search_node(state: ResearchState) -> dict[str, object]:
     logger.info("search_node: searching for '%s' (%d/%d)", question, current_index + 1, len(sub_questions))
     results = tavily_search(question)
     existing = list(state.get("search_results", []))
+
+    current_sources = state.get("sources", [])
+    new_sources = [
+        {"title": r.get("title", ""), "url": r.get("url", "")}
+        for r in results
+        if r["url"] not in {s.get("url") for s in current_sources}
+    ]
     return {
         "search_results": existing + results,
         "current_question_index": current_index + 1,
         "iteration_count": state.get("iteration_count", 0) + 1,
+        "sources": current_sources + new_sources,
     }
 
 

@@ -25,6 +25,7 @@ async def research_endpoint(request: ResearchRequest, req: Request) -> ResearchR
 		domain=result.get("domain", request.domain),
 		status="failed" if result.get("error") else "complete",
 		report=result.get("report"),
+		sources=result.get("sources", []),
 		error=result.get("error"),
 	)
 

@@ -16,4 +16,5 @@ class ResearchState(TypedDict):
     iteration_count: NotRequired[int]
     sufficient: NotRequired[bool]
     report: NotRequired[str]
+    sources: NotRequired[list[dict[str, str]]]
     error: NotRequired[str | None]

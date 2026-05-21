@@ -12,4 +12,5 @@ class ResearchResponse(BaseModel):
     domain: str = ""
     status: Literal["pending", "running", "complete", "failed"] = "complete"
     report: str | None = None
+    sources: list[dict[str, str]] = []
     error: str | None = None
